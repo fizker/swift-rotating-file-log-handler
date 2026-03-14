@@ -1,7 +1,7 @@
 public import Logging
 public import SystemPackage
 
-public class RotatingFileLogHandler {
+public struct RotatingFileLogHandler: Sendable {
 	public var metadata: Logger.Metadata
 	public var logLevel: Logger.Level
 	let folderPath: FilePath
