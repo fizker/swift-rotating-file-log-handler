@@ -29,6 +29,10 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 		try FileManager.default.createDirectory(atPath: folderPath.string, withIntermediateDirectories: true)
 	}
 
+	deinit {
+		try? flush()
+	}
+
 	// Synchronous, thread-safe
 	func write(_ value: String) {
 		queue.sync {
