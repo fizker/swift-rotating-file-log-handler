@@ -38,4 +38,8 @@ public struct RotatingFileLogHandler: Sendable {
 		handler.metadata = metadata
 		return handler
 	}
+
+	public func flush() throws {
+		try writer.flush()
+	}
 }
