@@ -14,6 +14,7 @@ public class RotatingFileLogHandler {
 		folderPath: FilePath,
 		filenamePrefix: String,
 		linesPerFile: Int = 1000,
+		flushDelay: Duration = .seconds(1),
 	) throws {
 		self.metadata = metadata
 		self.logLevel = logLevel
@@ -23,6 +24,7 @@ public class RotatingFileLogHandler {
 			folderPath: folderPath,
 			filenamePrefix: filenamePrefix,
 			linesPerFile: max(100, linesPerFile),
+			flushDelay: flushDelay,
 		)
 	}
 

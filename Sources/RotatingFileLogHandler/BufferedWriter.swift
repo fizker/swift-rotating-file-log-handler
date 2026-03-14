@@ -6,6 +6,7 @@ import SystemPackage
 /// This controls access to a file
 final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 	private let linesPerFile: Int
+	private let flushDelay: Duration
 
 	let folderPath: FilePath
 	let filenamePrefix: String
@@ -18,11 +19,12 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 	private var linesWritten: Int = 0
 	private var currentFile: FilePath?
 
-	init(folderPath: FilePath, filenamePrefix: String, linesPerFile: Int) throws {
+	init(folderPath: FilePath, filenamePrefix: String, linesPerFile: Int, flushDelay: Duration) throws {
 		self.queue = DispatchQueue(label: "BufferedWriter.queue.\(filenamePrefix)")
 		self.folderPath = folderPath
 		self.filenamePrefix = filenamePrefix
 		self.linesPerFile = linesPerFile
+		self.flushDelay = flushDelay
 
 		try FileManager.default.createDirectory(atPath: folderPath.string, withIntermediateDirectories: true)
 	}
@@ -34,9 +36,11 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 
 			if writeTimer == nil {
 				writeTimer = Task { [weak self] in
+					guard let self
+					else { return }
 					do {
-						try await Task.sleep(for: .seconds(5))
-						try self?.flush()
+						try await Task.sleep(for: flushDelay)
+						try flush()
 					} catch {}
 				}
 			}
