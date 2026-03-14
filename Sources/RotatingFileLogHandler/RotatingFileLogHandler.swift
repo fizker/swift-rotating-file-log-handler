@@ -14,12 +14,12 @@ public class RotatingFileLogHandler {
 		folderPath: FilePath,
 		filenamePrefix: String,
 		linesPerFile: Int = 1000,
-	) {
+	) throws {
 		self.metadata = metadata
 		self.logLevel = logLevel
 		self.folderPath = folderPath
 		self.filenamePrefix = filenamePrefix
-		writer = BufferedWriter(
+		writer = try BufferedWriter(
 			folderPath: folderPath,
 			filenamePrefix: filenamePrefix,
 			linesPerFile: max(100, linesPerFile),

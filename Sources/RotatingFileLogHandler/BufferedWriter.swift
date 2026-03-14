@@ -18,11 +18,13 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 	private var linesWritten: Int = 0
 	private var currentFile: FilePath?
 
-	init(folderPath: FilePath, filenamePrefix: String, linesPerFile: Int) {
+	init(folderPath: FilePath, filenamePrefix: String, linesPerFile: Int) throws {
 		self.queue = DispatchQueue(label: "BufferedWriter.queue.\(filenamePrefix)")
 		self.folderPath = folderPath
 		self.filenamePrefix = filenamePrefix
 		self.linesPerFile = linesPerFile
+
+		try FileManager.default.createDirectory(atPath: folderPath.string, withIntermediateDirectories: true)
 	}
 
 	// Synchronous, thread-safe
@@ -63,7 +65,12 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 
 		let data = Data(lines.joined(separator: "\n").utf8)
 
-		let fd = try FileDescriptor.open(currentFile, .writeOnly, options: .append)
+		let fd = try FileDescriptor.open(
+			currentFile,
+			.writeOnly,
+			options: [.append, .create],
+			permissions: [ .ownerReadWrite, .groupRead ],
+		)
 		try fd.closeAfter {
 			_ = try fd.writeAll(data)
 		}
