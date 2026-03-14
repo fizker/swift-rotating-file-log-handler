@@ -1,6 +1,15 @@
 {
-  "originHash" : "3e7e2e50353a7684676f22fa4dfcfc3638466131b0ed17dd59a44e1c113f4145",
+  "originHash" : "998e49c7551752c0031b7ceafb3a8f057812fe8dbf70781c4a1f1371f4c3b509",
   "pins" : [
+    {
+      "identity" : "swift-extensions",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/fizker/swift-extensions.git",
+      "state" : {
+        "revision" : "5a6354c898424f6a536d32fcf1e5bfca415c7312",
+        "version" : "1.5.1"
+      }
+    },
     {
       "identity" : "swift-log",
       "kind" : "remoteSourceControl",
@@ -8,6 +17,15 @@
       "state" : {
         "revision" : "bbd81b6725ae874c69e9b8c8804d462356b55523",
         "version" : "1.10.1"
+      }
+    },
+    {
+      "identity" : "swift-system",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-system",
+      "state" : {
+        "revision" : "7c6ad0fc39d0763e0b699210e4124afd5041c5df",
+        "version" : "1.6.4"
       }
     }
   ],
