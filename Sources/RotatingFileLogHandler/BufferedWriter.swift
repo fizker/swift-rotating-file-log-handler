@@ -67,7 +67,7 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 			return (lines, currentFile)
 		}
 
-		let data = Data(lines.joined(separator: "\n").utf8)
+		let data = Data(lines.joined().utf8)
 
 		let fd = try FileDescriptor.open(
 			currentFile,
