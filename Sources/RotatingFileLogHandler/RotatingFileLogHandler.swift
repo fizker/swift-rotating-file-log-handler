@@ -8,12 +8,22 @@ public class RotatingFileLogHandler {
 	let filenamePrefix: String
 	let writer: BufferedWriter
 
-	public init(logLevel: Logger.Level = .info, metadata: Logger.Metadata = [:], folderPath: FilePath, filenamePrefix: String) {
+	public init(
+		logLevel: Logger.Level = .info,
+		metadata: Logger.Metadata = [:],
+		folderPath: FilePath,
+		filenamePrefix: String,
+		linesPerFile: Int = 1000,
+	) {
 		self.metadata = metadata
 		self.logLevel = logLevel
 		self.folderPath = folderPath
 		self.filenamePrefix = filenamePrefix
-		writer = BufferedWriter(folderPath: folderPath, filenamePrefix: filenamePrefix)
+		writer = BufferedWriter(
+			folderPath: folderPath,
+			filenamePrefix: filenamePrefix,
+			linesPerFile: max(100, linesPerFile),
+		)
 	}
 
 	public func handler(label: String) -> LogHandler {

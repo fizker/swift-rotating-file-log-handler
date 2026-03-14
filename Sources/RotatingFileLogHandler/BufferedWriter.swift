@@ -5,7 +5,7 @@ import SystemPackage
 
 /// This controls access to a file
 final class BufferedWriter: @unchecked Sendable, TextOutputStream {
-	private let linesPerFile = 1000
+	private let linesPerFile: Int
 
 	let folderPath: FilePath
 	let filenamePrefix: String
@@ -18,10 +18,11 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 	private var linesWritten: Int = 0
 	private var currentFile: FilePath?
 
-	init(folderPath: FilePath, filenamePrefix: String) {
+	init(folderPath: FilePath, filenamePrefix: String, linesPerFile: Int) {
 		self.queue = DispatchQueue(label: "BufferedWriter.queue.\(filenamePrefix)")
 		self.folderPath = folderPath
 		self.filenamePrefix = filenamePrefix
+		self.linesPerFile = linesPerFile
 	}
 
 	// Synchronous, thread-safe
