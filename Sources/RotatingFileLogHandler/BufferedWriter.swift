@@ -5,7 +5,7 @@ import SystemPackage
 
 /// This controls access to a file
 final class BufferedWriter: @unchecked Sendable, TextOutputStream {
-	private let linesPerFile: Int
+	private let rotation: RotationTrigger
 	private let flushDelay: Duration
 
 	let folderPath: FilePath
@@ -16,14 +16,14 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 	private var buffer: [String] = []
 	private var writeTimer: Task<Void, Never>?
 
-	private var linesWritten: Int = 0
+	private var currentSize: UInt64 = 0
 	private var currentFile: FilePath?
 
-	init(folderPath: FilePath, filenamePrefix: String, linesPerFile: Int, flushDelay: Duration) throws {
+	init(folderPath: FilePath, filenamePrefix: String, rotation: RotationTrigger, flushDelay: Duration) throws {
 		self.queue = DispatchQueue(label: "BufferedWriter.queue.\(filenamePrefix)")
 		self.folderPath = folderPath
 		self.filenamePrefix = filenamePrefix
-		self.linesPerFile = linesPerFile
+		self.rotation = rotation
 		self.flushDelay = flushDelay
 
 		try FileManager.default.createDirectory(atPath: folderPath.string, withIntermediateDirectories: true)
@@ -55,13 +55,22 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 		let (lines, currentFile) = queue.sync {
 			writeTimer = nil
 
-			let lines = buffer
-			linesWritten += lines.count
+			let lines = buffer.map(\.utf8)
+			let target: UInt64
+			switch rotation {
+			case let .lines(maxLines):
+				target = maxLines
+				currentSize += UInt64(lines.count)
+			case let .size(bytes):
+				target = bytes.bytes
+				currentSize += lines.reduce(0) { $0 + UInt64($1.count) }
+			}
+
 			buffer.removeAll(keepingCapacity: true)
 
 			let currentFile: FilePath
-			if linesWritten >= linesPerFile || self.currentFile == nil {
-				linesWritten = 0
+			if currentSize >= target || self.currentFile == nil {
+				currentSize = 0
 				currentFile = folderPath.appending("\(filenamePrefix)-\(Date.now.iso8601).log")
 				self.currentFile = currentFile
 			} else {
@@ -71,7 +80,7 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 			return (lines, currentFile)
 		}
 
-		let data = Data(lines.joined().utf8)
+		let data = Data(lines.joined())
 
 		let fd = try FileDescriptor.open(
 			currentFile,
