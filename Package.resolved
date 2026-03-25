@@ -1,13 +1,13 @@
 {
-  "originHash" : "998e49c7551752c0031b7ceafb3a8f057812fe8dbf70781c4a1f1371f4c3b509",
+  "originHash" : "897e1f081077b6c11829792e9c751b0ae4c078d094ed0345b96549ca065c1d25",
   "pins" : [
     {
       "identity" : "swift-extensions",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/fizker/swift-extensions.git",
       "state" : {
-        "revision" : "5a6354c898424f6a536d32fcf1e5bfca415c7312",
-        "version" : "1.5.1"
+        "revision" : "45efdcd210e37ff288b6dc6f095e0b47a3b66468",
+        "version" : "1.5.2"
       }
     },
     {
