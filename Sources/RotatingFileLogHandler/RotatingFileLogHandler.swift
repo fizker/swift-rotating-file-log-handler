@@ -52,6 +52,7 @@ public struct RotatingFileLogHandler: Sendable {
 	///   - folderPath: The folder where log files will be created.
 	///   - filenamePrefix: The prefix used for log file names.
 	///   - rotation: The trigger for when the files should be rotated. Defaults to 1000 lines.
+	///   - cleanup: A schedule for how old logs should be cleaned up. Defaults to after 14 days.
 	///   - flushDelay: The delay between buffered writes and actual disk flushes. Defaults to 1 second.
 	///
 	/// - Throws: An error if the underlying `BufferedWriter` cannot be created, for example if the folder does not exist or is not writable.
@@ -61,6 +62,7 @@ public struct RotatingFileLogHandler: Sendable {
 		folderPath: FilePath,
 		filenamePrefix: String,
 		rotation: RotationTrigger = .lines(1000),
+		cleanup: CleanupTrigger = .age(.days(14)),
 		flushDelay: Duration = .seconds(1),
 	) throws {
 		self.metadata = metadata
@@ -71,6 +73,7 @@ public struct RotatingFileLogHandler: Sendable {
 			folderPath: folderPath,
 			filenamePrefix: filenamePrefix,
 			rotation: rotation,
+			cleanup: cleanup,
 			flushDelay: flushDelay,
 		)
 	}

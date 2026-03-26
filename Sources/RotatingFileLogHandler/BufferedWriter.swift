@@ -7,6 +7,7 @@ import SystemPackage
 final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 	private let rotation: RotationTrigger
 	private let flushDelay: Duration
+	private let cleanup: CleanupTrigger
 
 	let folderPath: FilePath
 	let filenamePrefix: String
@@ -19,11 +20,18 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 	private var currentSize: UInt64 = 0
 	private var currentFile: FilePath?
 
-	init(folderPath: FilePath, filenamePrefix: String, rotation: RotationTrigger, flushDelay: Duration) throws {
+	init(
+		folderPath: FilePath,
+		filenamePrefix: String,
+		rotation: RotationTrigger,
+		cleanup: CleanupTrigger,
+		flushDelay: Duration,
+	) throws {
 		self.queue = DispatchQueue(label: "BufferedWriter.queue.\(filenamePrefix)")
 		self.folderPath = folderPath
 		self.filenamePrefix = filenamePrefix
 		self.rotation = rotation
+		self.cleanup = cleanup
 		self.flushDelay = flushDelay
 
 		try FileManager.default.createDirectory(atPath: folderPath.string, withIntermediateDirectories: true)
@@ -90,6 +98,42 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 		)
 		try fd.closeAfter {
 			_ = try fd.writeAll(data)
+		}
+
+		try performCleanup()
+	}
+
+	func performCleanup() throws {
+		guard cleanup != .never
+		else { return }
+
+		let fm = FileManager.default
+		let allFiles = try fm.contentsOfDirectory(atPath: folderPath.string)
+			.filter { $0.starts(with: filenamePrefix) }
+			.map(folderPath.appending(_:))
+
+		let filesToRemove: [FilePath]
+
+		switch cleanup {
+		case .never:
+			return
+		case let .age(age):
+			let cutoff = Date.now - age.asTimeInterval
+			filesToRemove = try allFiles.filter { file in
+				let attributes = try fm.attributesOfItem(atPath: file.string)
+				guard let modDate = attributes[.modificationDate] as? Date ?? attributes[.creationDate] as? Date
+				else { return false }
+				return modDate < cutoff
+			}
+		case let .fileCount(fileCount):
+			let toRemove = allFiles.count - fileCount
+			guard toRemove > 0
+			else { return }
+			filesToRemove = Array(allFiles[0..<toRemove])
+		}
+
+		for file in filesToRemove {
+			try fm.removeItem(atPath: file.string)
 		}
 	}
 }
