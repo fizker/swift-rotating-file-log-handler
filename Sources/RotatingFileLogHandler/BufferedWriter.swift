@@ -6,6 +6,7 @@ import SystemPackage
 /// This controls access to a file
 final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 	private let rotation: RotationTrigger
+	private let initialFile: InitialFile
 	private let flushDelay: Duration
 	private let cleanup: CleanupTrigger
 
@@ -24,6 +25,7 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 		folderPath: FilePath,
 		filenamePrefix: String,
 		rotation: RotationTrigger,
+		initialFile: InitialFile,
 		cleanup: CleanupTrigger,
 		flushDelay: Duration,
 	) throws {
@@ -31,6 +33,7 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 		self.folderPath = folderPath
 		self.filenamePrefix = filenamePrefix
 		self.rotation = rotation
+		self.initialFile = initialFile
 		self.cleanup = cleanup
 		self.flushDelay = flushDelay
 
@@ -79,7 +82,7 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 			let currentFile: FilePath
 			if currentSize >= target || self.currentFile == nil {
 				currentSize = 0
-				currentFile = folderPath.appending("\(filenamePrefix)-\(Date.now.iso8601).log")
+				currentFile = updateCurrentFile(forceNewFile: currentSize >= target)
 				self.currentFile = currentFile
 			} else {
 				currentFile = self.currentFile!
@@ -101,6 +104,57 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 		}
 
 		try performCleanup()
+	}
+
+	func updateCurrentFile(forceNewFile: Bool) -> FilePath {
+		var forceNewFile = forceNewFile
+		switch initialFile {
+		case .alwaysNew: forceNewFile = true
+		case .reuseLatest: break
+		}
+
+		let newName: FilePath
+		if !forceNewFile, let existingFile = try? latestFile() {
+			newName = existingFile.path
+			currentSize += existingFile.size
+		} else {
+			newName = folderPath.appending("\(filenamePrefix)-\(Date.now.iso8601).log")
+		}
+		currentFile = newName
+		return newName
+	}
+
+	/// Returns path and size of the last written file
+	///
+	/// If there is no previous files, or the last file is exceeding the rotation-target, this returns nil.
+	///
+	/// It takes the current rotation into account to determine the limit.
+	func latestFile() throws -> (path: FilePath, size: UInt64)? {
+		let fm = FileManager.default
+		let allFiles = try fm.contentsOfDirectory(atPath: folderPath.string)
+			.filter { $0.starts(with: filenamePrefix) }
+			.sorted()
+			.map(folderPath.appending(_:))
+
+		guard let latestEntry = allFiles.last
+		else { return nil }
+
+		switch rotation {
+		case let .lines(lineLimit):
+			let contents = try String(contentsOfFile: latestEntry.string, encoding: .utf8)
+			let lines = contents.split(whereSeparator: { CharacterSet.newlines.contains($0) })
+			let lineCount = UInt64(lines.count)
+			guard lineCount < lineLimit
+			else { return nil }
+			return (latestEntry, lineCount)
+		case let .size(sizeLimit):
+			let attributes = try fm.attributesOfItem(atPath: latestEntry.string)
+			guard
+				let size = (attributes[.size] as? Int64).map(UInt64.init),
+				size < sizeLimit.bytes
+			else { return nil }
+			return (latestEntry, size)
+		}
 	}
 
 	func performCleanup() throws {
@@ -135,5 +189,11 @@ final class BufferedWriter: @unchecked Sendable, TextOutputStream {
 		for file in filesToRemove {
 			try fm.removeItem(atPath: file.string)
 		}
+	}
+}
+
+extension CharacterSet {
+	func contains(_ character: Character) -> Bool {
+		character.unicodeScalars.contains(where: contains)
 	}
 }

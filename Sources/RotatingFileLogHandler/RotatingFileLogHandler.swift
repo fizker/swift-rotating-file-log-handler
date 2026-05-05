@@ -46,12 +46,15 @@ public struct RotatingFileLogHandler: Sendable {
 
 	/// Creates a new `RotatingFileLogHandler` that writes log messages to files within the specified folder.
 	///
+	/// Note that `rotation` is checked before writing the buffer, not during the write, so actual log content will probably exceed the limit slightly.
+	///
 	/// - Parameters:
 	///   - logLevel: The minimum severity level of messages to log. Defaults to `.info`.
 	///   - metadata: Initial metadata to attach to all log messages. Defaults to empty.
 	///   - folderPath: The folder where log files will be created.
 	///   - filenamePrefix: The prefix used for log file names.
 	///   - rotation: The trigger for when the files should be rotated. Defaults to 1000 lines.
+	///   - initialFile: Defines if the latest file from the previous run can be reused.
 	///   - cleanup: A schedule for how old logs should be cleaned up. Defaults to after 14 days.
 	///   - flushDelay: The delay between buffered writes and actual disk flushes. Defaults to 1 second.
 	///
@@ -62,6 +65,7 @@ public struct RotatingFileLogHandler: Sendable {
 		folderPath: FilePath,
 		filenamePrefix: String,
 		rotation: RotationTrigger = .lines(1000),
+		initialFile: InitialFile = .reuseLatest,
 		cleanup: CleanupTrigger = .age(.days(14)),
 		flushDelay: Duration = .seconds(1),
 	) throws {
@@ -73,6 +77,7 @@ public struct RotatingFileLogHandler: Sendable {
 			folderPath: folderPath,
 			filenamePrefix: filenamePrefix,
 			rotation: rotation,
+			initialFile: initialFile,
 			cleanup: cleanup,
 			flushDelay: flushDelay,
 		)
